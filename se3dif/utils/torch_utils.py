@@ -6,17 +6,18 @@ import json
 
 specifications_filename = "params.json"
 
-def load_experiment_specifications(experiment_directory):
+def load_experiment_specifications(experiment_param_path):
 
-    filename = os.path.join(experiment_directory, specifications_filename)
+    #filename = os.path.join(experiment_directory, specifications_filename)
 
-    if not os.path.isfile(filename):
+    #if not os.path.isfile(filename):
+    if not os.path.isfile(experiment_param_path):
         raise Exception(
             "The experiment directory ({}) does not include specifications file "
-            + '"params.json"'.format(experiment_directory)
+            + '"params.json"'.format(experiment_param_path)
         )
 
-    return json.load(open(filename))
+    return json.load(open(experiment_param_path))
 
 
 def dict_to_device(ob, device):

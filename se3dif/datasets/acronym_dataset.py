@@ -19,10 +19,10 @@ import h5py
 
 from se3dif.utils import get_data_src
 from se3dif.utils import to_numpy, to_torch, get_grasps_src
-from mesh_to_sdf.surface_point_cloud import get_scan_view, get_hq_scan_view
-from mesh_to_sdf.scan import ScanPointcloud
+#from mesh_to_sdf.surface_point_cloud import get_scan_view, get_hq_scan_view
+#from mesh_to_sdf.scan import ScanPointcloud
 from pathlib import Path
-from mesh_to_sdf import sample_sdf_near_surface
+#from mesh_to_sdf import sample_sdf_near_surface
 from se3dif.utils import directory_utils
 from braceexpand import braceexpand
 

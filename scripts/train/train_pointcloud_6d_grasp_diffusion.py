@@ -45,7 +45,6 @@ def parse_args():
 
 
 def main(opt):
-
     ## Load training args ##
     spec_file = os.path.join(opt.specs_file_dir, opt.spec_file)
     args = load_experiment_specifications(spec_file)

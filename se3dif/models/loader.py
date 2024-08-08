@@ -4,16 +4,18 @@ import torch.nn as nn
 import numpy as np
 
 from se3dif import models
-
+from pathlib import Path
 
 from se3dif.utils import get_pretrained_models_src, load_experiment_specifications
 pretrained_models_dir = get_pretrained_models_src()
 
 
-def load_model(args):
+def load_model(args, model_path:Path):
     if 'pretrained_model' in args:
-        model_args = load_experiment_specifications(os.path.join(pretrained_models_dir,
-                                                                      args['pretrained_model']))
+        #model_args = load_experiment_specifications(os.path.join(pretrained_models_dir,
+        #                                                              args['pretrained_model']))
+        spec_path = model_path.parent / f"{model_path.stem}.json"
+        model_args = load_experiment_specifications(spec_path)
         args["NetworkArch"] = model_args["NetworkArch"]
         args["NetworkSpecs"] = model_args["NetworkSpecs"]
 
@@ -24,7 +26,7 @@ def load_model(args):
 
 
     if 'pretrained_model' in args:
-        model_path = os.path.join(pretrained_models_dir, args['pretrained_model'], 'model.pth')
+        #model_path = os.path.join(pretrained_models_dir, args['pretrained_model'], 'model.pth')
 
         model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
 
