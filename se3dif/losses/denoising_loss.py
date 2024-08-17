@@ -22,6 +22,11 @@ class ProjectedSE3DenoisingLoss():
         ## Set input ##
         H = model_input['x_ene_pos']
         c = model_input['visual_context']
+        
+        no_pose_flat = (torch.einsum("bnij->bn", H) == 0.)
+        valid = ~ no_pose_flat
+        B, P = valid.shape
+
         model.set_latent(c, batch=H.shape[1])
         H = H.reshape(-1, 4, 4)
 
@@ -40,17 +45,23 @@ class ProjectedSE3DenoisingLoss():
         ## Get gradient ##
         with torch.set_grad_enabled(True):
             perturbed_H = SO3_R3().exp_map(perturbed_x).to_matrix()
+            
             energy = model(perturbed_H, random_t)
+            energy = energy.reshape(B, P)[valid]
+            
+            #energy = energy[valid]
             grad_energy = torch.autograd.grad(energy.sum(), perturbed_x,
                                               only_inputs=True, retain_graph=True, create_graph=True)[0]
 
         # Compute L1 loss
         z_target = z/std[...,None]
-        loss_fn = nn.L1Loss()
+        loss_fn = nn.L1Loss(reduction="none")
+        
         loss = loss_fn(grad_energy, z_target)/10.
-
+        #print(torch.isnan(loss).any())
         info = {self.field: grad_energy}
-        loss_dict = {"Score loss": loss}
+        loss_dict = {"Score loss": loss.sum(-1).mean()}
+        
         return loss_dict, info
 
 
