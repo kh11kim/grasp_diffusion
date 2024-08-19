@@ -490,7 +490,7 @@ class PointcloudAcronymAndSDFDataset(Dataset):
         'Generates one sample of data'
         return self._get_item(index)
 
-
+    
 class PartialPointcloudAcronymAndSDFDataset(Dataset):
     'DataLoader for training DeepSDF with a Rotation Invariant Encoder model'
     def __init__(self, class_type=['Cup', 'Mug', 'Fork', 'Hat', 'Bottle'],

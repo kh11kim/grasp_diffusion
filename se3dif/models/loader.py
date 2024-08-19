@@ -10,11 +10,12 @@ from se3dif.utils import get_pretrained_models_src, load_experiment_specificatio
 pretrained_models_dir = get_pretrained_models_src()
 
 
-def load_model(args, model_path:Path):
+def load_model(args):
     if 'pretrained_model' in args:
         #model_args = load_experiment_specifications(os.path.join(pretrained_models_dir,
         #                                                              args['pretrained_model']))
-        spec_path = model_path.parent / f"{model_path.stem}.json"
+        # , model_path:Path
+        # spec_path = model_path.parent / f"{model_path.stem}.json"
         model_args = load_experiment_specifications(spec_path)
         args["NetworkArch"] = model_args["NetworkArch"]
         args["NetworkSpecs"] = model_args["NetworkSpecs"]

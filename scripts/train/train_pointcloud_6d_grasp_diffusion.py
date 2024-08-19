@@ -5,6 +5,7 @@ from se3dif.utils import get_root_src
 
 import torch
 from torch.utils.data import DataLoader
+from se3dif.datasets.acronym_dataset import PointcloudDataset as PointcloudDataset
 
 from se3dif import datasets, losses, summaries, trainer
 from se3dif.models import loader
@@ -24,7 +25,7 @@ def parse_args():
     p.add_argument('--specs_file_dir', type=str, default=os.path.join(base_dir, 'params')
                    , help='root for saving logging')
 
-    p.add_argument('--spec_file', type=str, default='multiobject_p_graspdif'
+    p.add_argument('--spec_file', type=str, default='multiobject_p_graspdif2'
                    , help='root for saving logging')
 
     p.add_argument('--summary', type=bool, default=False
@@ -47,6 +48,7 @@ def parse_args():
 def main(opt):
     ## Load training args ##
     spec_file = os.path.join(opt.specs_file_dir, opt.spec_file)
+    spec_file = spec_file + "/params.json"
     args = load_experiment_specifications(spec_file)
 
     # saving directories
@@ -65,11 +67,14 @@ def main(opt):
         device = torch.device('cpu')
 
     ## Dataset
-    train_dataset = datasets.PointcloudAcronymAndSDFDataset(
-        class_type=['bowl', 'mug', 'bottle', 'laptop', 'cerealbox', 'hammer'],
-        augmented_rotation=True,
-        one_object=args['single_object']
+    train_dataset = PointcloudDataset(
+        "data/scene_grasp_data/floating_mbbchl/train/*.h5",
     )
+    # train_dataset = datasets.PointcloudAcronymAndSDFDataset(
+    #     class_type=['bowl', 'mug', 'bottle', 'laptop', 'cerealbox', 'hammer'],
+    #     augmented_rotation=True,
+    #     one_object=args['single_object']
+    # )
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=args['TrainSpecs']['batch_size'],
@@ -78,16 +83,16 @@ def main(opt):
         num_workers=1,
         persistent_workers=True,
     )
-    test_dataset = copy.deepcopy(train_dataset)
-    test_dataset.set_test_data()
-    test_dataloader = DataLoader(
-        test_dataset,
-        batch_size=args['TrainSpecs']['batch_size'],
-        shuffle=True,
-        drop_last=True,
-        # num_workers=1,
-        # persistent_workers=True,
-    )
+    # test_dataset = copy.deepcopy(train_dataset)
+    # test_dataset.set_test_data()
+    # test_dataloader = DataLoader(
+    #     test_dataset,
+    #     batch_size=args['TrainSpecs']['batch_size'],
+    #     shuffle=True,
+    #     drop_last=True,
+    #     # num_workers=1,
+    #     # persistent_workers=True,
+    # )
 
     ## Model
     args['device'] = device
@@ -128,7 +133,7 @@ def main(opt):
                 epochs_til_checkpoint=args['TrainSpecs']['epochs_til_checkpoint'],
                 loss_fn=loss_fn, iters_til_checkpoint=args['TrainSpecs']['iters_til_checkpoint'],
                 clip_grad=False, val_loss_fn=val_loss_fn, overwrite=True,
-                val_dataloader=test_dataloader)
+                )
 
 
 if __name__ == '__main__':

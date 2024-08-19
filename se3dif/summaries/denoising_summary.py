@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from se3dif.samplers import Grasp_AnnealedLD
 
 from se3dif.utils import to_numpy
-from se3dif.visualization import grasp_visualization
+#from se3dif.visualization import grasp_visualization
 
 
 def denoising_summary(model, model_input, ground_truth, info, writer, iter, prefix=""):

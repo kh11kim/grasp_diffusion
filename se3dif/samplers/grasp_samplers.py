@@ -136,11 +136,12 @@ class Grasp_AnnealedLD():
             phi0 = H0_in.log_map()
 
             ## 2. Compute energy gradient ##
-            phi0_in = phi0.detach().requires_grad_(True)
-            H_in = SO3_R3().exp_map(phi0_in).to_matrix()
-            t_in = phase*torch.ones_like(H_in[:,0,0])
-            e = self.model(H_in, t_in)
-            d_phi = torch.autograd.grad(e.sum(), phi0_in)[0]
+            with torch.set_grad_enabled(True):
+                phi0_in = phi0.detach().requires_grad_(True)
+                H_in = SO3_R3().exp_map(phi0_in).to_matrix()
+                t_in = phase*torch.ones_like(H_in[:,0,0])
+                e = self.model(H_in, t_in)
+                d_phi = torch.autograd.grad(e.sum(), phi0_in)[0]
 
             ## 3. Compute noise vector ##
             if noise_off:
