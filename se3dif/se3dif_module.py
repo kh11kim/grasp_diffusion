@@ -51,8 +51,11 @@ class SE3DifModule(L.LightningModule):
         batch['visual_context'] = (pcd - self._center) * scale
         
         pose = batch['x_ene_pos']
+        no_pose = torch.einsum("bnij->bn", pose) == 0.
         pose[..., :3, -1] = (pose[..., :3, -1] - self._center) * scale
+        pose[no_pose] = 0.
         batch['x_ene_pos'] = pose
+        
         return batch
     
     def training_step(self, batch):

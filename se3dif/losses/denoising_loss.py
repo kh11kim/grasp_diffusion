@@ -23,12 +23,12 @@ class ProjectedSE3DenoisingLoss():
         H = model_input['x_ene_pos']
         c = model_input['visual_context']
         
-        no_pose_flat = (torch.einsum("bnij->bn", H) == 0.)
-        valid = ~ no_pose_flat
-        B, P = valid.shape
+        no_pose_batch = (torch.einsum("bnij->b", H) == 0.)
+        valid_batch = ~no_pose_batch
 
-        model.set_latent(c, batch=H.shape[1])
-        H = H.reshape(-1, 4, 4)
+
+        model.set_latent(c[valid_batch], batch=H.shape[1])
+        H = H[valid_batch].reshape(-1, 4, 4)
 
         ## 1. H to vector ##
         H_th = SO3_R3(R=H[...,:3, :3], t=H[...,:3, -1])
@@ -47,9 +47,6 @@ class ProjectedSE3DenoisingLoss():
             perturbed_H = SO3_R3().exp_map(perturbed_x).to_matrix()
             
             energy = model(perturbed_H, random_t)
-            energy = energy.reshape(B, P)[valid]
-            
-            #energy = energy[valid]
             grad_energy = torch.autograd.grad(energy.sum(), perturbed_x,
                                               only_inputs=True, retain_graph=True, create_graph=True)[0]
 
@@ -57,8 +54,9 @@ class ProjectedSE3DenoisingLoss():
         z_target = z/std[...,None]
         loss_fn = nn.L1Loss(reduction="none")
         
-        loss = loss_fn(grad_energy, z_target)/10.
-        #print(torch.isnan(loss).any())
+        loss = loss_fn(
+            grad_energy, 
+            z_target)/10.
         info = {self.field: grad_energy}
         loss_dict = {"Score loss": loss.sum(-1).mean()}
         
