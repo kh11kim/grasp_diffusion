@@ -11,6 +11,7 @@ class SE3DifModule(L.LightningModule):
     def __init__(self, param_path:Path, **kwargs):
         super().__init__()
         #spec_file = ROOT / "external/grasp_diffusion/params.json"
+        self.save_hyperparameters()
         args = load_experiment_specifications(ROOT/param_path)
         args['device'] = 'cuda'
         
@@ -89,6 +90,7 @@ class SE3DifModule(L.LightningModule):
         
         emds = []
         for pose_gt, pose_pred in zip(poses_gt, poses_pred):
+            if pose_gt.sum() == 0: continue
             emds += [calculate_emd(pose_gt, pose_pred).item()]
         
         self.log("total_emd", np.mean(emds))
