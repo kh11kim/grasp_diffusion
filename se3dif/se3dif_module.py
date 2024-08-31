@@ -6,6 +6,10 @@ from icra2025 import ROOT
 from omegaconf import OmegaConf
 from SPLIT.metric import calculate_emd
 from se3dif.samplers import Grasp_AnnealedLD
+import copy
+
+to_tensor = lambda x, device: torch.from_numpy(x).float().to(device)
+to_numpy = lambda x: x.detach().cpu().numpy()
 
 class SE3DifModule(L.LightningModule):
     def __init__(self, param_path:Path, **kwargs):
@@ -46,18 +50,35 @@ class SE3DifModule(L.LightningModule):
         return optimizer
 
     def apply_scaling(self, batch):
-        pcd = batch['visual_context']
+        if 'visual_context' in batch:
+            pcd = batch['visual_context']
+        elif 'pcd' in batch:
+            pcd = batch['pcd']
         self._center = torch.mean(pcd, dim=1, keepdim=True)
         scale = 2. / self.ws_size
         batch['visual_context'] = (pcd - self._center) * scale
         
-        pose = batch['x_ene_pos']
-        no_pose = torch.einsum("bnij->bn", pose) == 0.
-        pose[..., :3, -1] = (pose[..., :3, -1] - self._center) * scale
-        pose[no_pose] = 0.
-        batch['x_ene_pos'] = pose
+        if 'x_ene_pos' in batch:
+            pose = batch['x_ene_pos']
+            no_pose = torch.einsum("bnij->bn", pose) == 0.
+            pose[..., :3, -1] = (pose[..., :3, -1] - self._center) * scale
+            pose[no_pose] = 0.
+            batch['x_ene_pos'] = pose
         
         return batch
+    
+    def apply_reverse_scaling_to_pose(self, pose):
+        pose = pose.clone()            
+        
+        normalized_grid_size = 2.
+        #ws_center = torch.tensor(self.args['ws_center']).float().to(self.device)
+        scale = normalized_grid_size / self.args['ws_size']
+        
+        pos = pose[..., :3, 3] / scale
+        if hasattr(self, "_center"):
+            pos += self._center
+        pose[..., :3, 3] = pos
+        return pose
     
     def training_step(self, batch):
         model_input, gt = batch
@@ -74,8 +95,20 @@ class SE3DifModule(L.LightningModule):
 
     def sample(self, num_samples=100):
         pose = self.sampler.sample(batch=num_samples)
-        return pose
-        
+        return pose.reshape(self.B, -1, 4, 4)
+    
+    def generate_grasp_poses(self, vision_inputs, num_samples=100):
+        vision_inputs = copy.deepcopy(vision_inputs)
+        vision_inputs['pcd'] = to_tensor(vision_inputs['pcd'], self.device).unsqueeze(0)
+        vision_inputs = self.apply_scaling(vision_inputs)
+        self.B = 1
+        self.model.set_latent(
+            vision_inputs['visual_context'], 
+            batch=num_samples)
+        grasp_poses = self.sample(num_samples)
+        grasp_poses_w = self.apply_reverse_scaling_to_pose(grasp_poses)
+        return grasp_poses_w[0]
+
     def validation_step(self, batch):
         model_input, gt = batch
         model_input = self.apply_scaling(model_input)
